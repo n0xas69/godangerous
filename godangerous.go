@@ -1,19 +1,36 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
+	"runtime"
 	"time"
 )
 
 func main() {
-  WINDOWS_LOGS := "C:/"
-  LINUX_LOGS := "/home/my_username/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
-  }
+
+	var logs string
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if runtime.GOOS == "windows" {
+		logs = home + "\\Saved Games\\Frontier Developments\\Elite Dangerous"
+	} else {
+		logs = "/home/my_username/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
+	}
+
+	fmt.Println(logs)
+
+	find_newest_file(logs)
+}
 
 func find_newest_file(folder_path string) string {
-  var list_of_file []string
+	var list_of_file []string
 	fs.WalkDir(os.DirFS(folder_path), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Fatal(err)
