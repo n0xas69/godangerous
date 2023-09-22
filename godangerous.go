@@ -9,6 +9,21 @@ import (
 	"time"
 )
 
+type location struct {
+	station string
+	system string
+}
+
+type planets struct {
+	eath_like []string{}
+	terraform_rocky_body []string{}
+	terraform_hmetal_world []string{}
+	terraform_water_world []string{}
+	water_world []string{}
+	amonia_world []string{}
+}
+
+
 func main() {
 
 	var logs string
