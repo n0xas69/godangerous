@@ -1,28 +1,31 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"runtime"
+	"strings"
 	"time"
+
+	"github.com/tidwall/gjson"
 )
 
 type location struct {
 	station string
-	system string
+	system  string
 }
 
 type planets struct {
-	eath_like []string{}
-	terraform_rocky_body []string{}
-	terraform_hmetal_world []string{}
-	terraform_water_world []string{}
-	water_world []string{}
-	amonia_world []string{}
+	eath_like              []string
+	terraform_rocky_body   []string
+	terraform_hmetal_world []string
+	terraform_water_world  []string
+	water_world            []string
+	amonia_world           []string
 }
-
 
 func main() {
 
@@ -34,18 +37,19 @@ func main() {
 	}
 
 	if runtime.GOOS == "windows" {
-		logs = home + "\\Saved Games\\Frontier Developments\\Elite Dangerous"
+		//logs = home + "\\Saved Games\\Frontier Developments\\Elite Dangerous"
+		logs = "."
 	} else {
-		logs = "/home/my_username/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
+		logs = home + "/home/my_username/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
 	}
 
-	fmt.Println(logs)
-
-	find_newest_file(logs)
+	fmt.Print(find_cmdr_position(logs))
 }
 
-func find_newest_file(folder_path string) string {
+func find_cmdr_position(folder_path string) string {
+	var fsd_jump string
 	var list_of_file []string
+
 	fs.WalkDir(os.DirFS(folder_path), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			log.Fatal(err)
@@ -63,13 +67,30 @@ func find_newest_file(folder_path string) string {
 			log.Fatal(err)
 		}
 
-		if f.Name() != "." && f.ModTime().After(newest_time) {
-			newest_file = f
-			newest_time = f.ModTime()
+		if strings.Contains(f.Name(), "journal") {
+			if f.Name() != "." && f.ModTime().After(newest_time) {
+				newest_file = f
+				newest_time = f.ModTime()
+			}
 		}
 
 	}
 
-	return newest_file.Name()
+	file, err := os.Open(newest_file.Name())
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "FSDJump") {
+			fsd_jump = scanner.Text()
+
+		}
+	}
+
+	cmdr_position := gjson.Get(fsd_jump, "StarSystem")
+	return cmdr_position.String()
 
 }
