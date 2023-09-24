@@ -48,8 +48,10 @@ func main() {
 	if runtime.GOOS == "windows" {
 		logs = home + "\\Saved Games\\Frontier Developments\\Elite Dangerous"
 	} else {
-		logs = home + "/home/my_username/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
+		logs = home + "/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
 	}
+
+	fmt.Println(logs)
 
 	for {
 		time.Sleep(1 * time.Second)
@@ -125,7 +127,12 @@ func find_cmdr_position(folder_path string) string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		list_of_file = append(list_of_file, folder_path+"\\"+path)
+		if runtime.GOOS == "windows" {
+			list_of_file = append(list_of_file, folder_path+"\\"+path)
+		} else {
+
+			list_of_file = append(list_of_file, folder_path+"/"+path)
+		}
 		return nil
 	})
 
