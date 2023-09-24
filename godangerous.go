@@ -3,23 +3,31 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
+	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gocolly/colly"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/tidwall/gjson"
 )
+
+var cmdr_position string
 
 type location struct {
 	station string
 	system  string
 }
 
-type planets struct {
-	eath_like              []string
+type Planets struct {
+	earth_like             []string
 	terraform_rocky_body   []string
 	terraform_hmetal_world []string
 	terraform_water_world  []string
@@ -30,6 +38,7 @@ type planets struct {
 func main() {
 
 	var logs string
+	var pre_cmdr_position string
 
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -37,13 +46,67 @@ func main() {
 	}
 
 	if runtime.GOOS == "windows" {
-		//logs = home + "\\Saved Games\\Frontier Developments\\Elite Dangerous"
-		logs = "."
+		logs = home + "\\Saved Games\\Frontier Developments\\Elite Dangerous"
 	} else {
 		logs = home + "/home/my_username/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
 	}
 
-	fmt.Print(find_cmdr_position(logs))
+	for {
+		time.Sleep(2 * time.Second)
+		cmdr_position = find_cmdr_position(logs)
+
+		// we dont make http request if commander position dont change
+		if cmdr_position != pre_cmdr_position {
+
+			t1 := table.NewWriter()
+			t1.SetOutputMirror(os.Stdout)
+			t1.AppendHeader(table.Row{"Type de matériaux", "Système", "Station"})
+			t1.AppendRows([]table.Row{
+				{"Brut", get_trade_raw((cmdr_position)).system, get_trade_raw(cmdr_position).station},
+				{"Fabriqué", get_trade_manu((cmdr_position)).system, get_trade_manu(cmdr_position).station},
+				{"Encodé", get_trade_data((cmdr_position)).system, get_trade_data(cmdr_position).station},
+			})
+			t1.SetStyle(table.StyleColoredBright)
+
+			t2 := table.NewWriter()
+			t2.SetOutputMirror(os.Stdout)
+			t2.AppendHeader(table.Row{"Type de planète", "Nom"})
+			t2.AppendRows([]table.Row{
+				{"Abondant en métaux terraformable", get_interest_body(cmdr_position).terraform_hmetal_world},
+				{"Tellurique", get_interest_body(cmdr_position).earth_like},
+				{"Planète rocheuse terraformable", get_interest_body(cmdr_position).terraform_rocky_body},
+				{"Monde aquatique terraformable", get_interest_body(cmdr_position).terraform_water_world},
+				{"Monde ammoniac", get_interest_body(cmdr_position).amonia_world},
+				{"Monde aquatique", get_interest_body(cmdr_position).water_world},
+			})
+			t2.SetStyle(table.StyleColoredBright)
+
+			clear_cli()
+			fmt.Println(" ==== Trader les plus proches ====")
+			fmt.Println("")
+			t1.Render()
+			fmt.Println("")
+			fmt.Println(" ==== Planètes rares du système ====")
+			fmt.Println("")
+			t2.Render()
+
+		}
+		pre_cmdr_position = cmdr_position
+
+	}
+
+}
+
+func clear_cli() {
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	} else {
+		cmd := exec.Command("clear")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
 }
 
 func find_cmdr_position(folder_path string) string {
@@ -93,4 +156,113 @@ func find_cmdr_position(folder_path string) string {
 	cmdr_position := gjson.Get(fsd_jump, "StarSystem")
 	return cmdr_position.String()
 
+}
+
+func get_trade_raw(cmdr_position string) location {
+	var trade_raw location
+	c := colly.NewCollector()
+
+	visited := false
+	c.OnHTML("tr", func(e *colly.HTMLElement) {
+		if visited {
+			return
+		}
+		if strings.Contains(e.ChildText("td"), "Pur") {
+			trade_raw.station = e.ChildText("strong")
+			trade_raw.system = e.ChildText("td > small > a:first-child")
+			visited = true
+
+		}
+
+	})
+
+	c.Visit("https://www.edsm.net/fr/search/stations/index/cmdrPosition/" + cmdr_position + "/economy/3/service/71/sortBy/distanceCMDR")
+
+	return trade_raw
+
+}
+
+func get_trade_manu(cmdr_position string) location {
+	var trade_manu location
+	c := colly.NewCollector()
+
+	visited := false
+	c.OnHTML("tr", func(e *colly.HTMLElement) {
+		if visited {
+			return
+		}
+		if strings.Contains(e.ChildText("td"), "Manufacturé") {
+			trade_manu.station = e.ChildText("strong")
+			trade_manu.system = e.ChildText("td > small > a:first-child")
+			visited = true
+
+		}
+
+	})
+
+	c.Visit("https://www.edsm.net/fr/search/stations/index/cmdrPosition/" + cmdr_position + "/economy/5/service/71/sortBy/distanceCMDR")
+
+	return trade_manu
+
+}
+
+func get_trade_data(cmdr_position string) location {
+	var trade_data location
+	c := colly.NewCollector()
+
+	visited := false
+	c.OnHTML("tr", func(e *colly.HTMLElement) {
+		if visited {
+			return
+		}
+		if strings.Contains(e.ChildText("td"), "Encodé") {
+			trade_data.station = e.ChildText("strong")
+			trade_data.system = e.ChildText("td > small > a:first-child")
+			visited = true
+
+		}
+
+	})
+
+	c.Visit("https://www.edsm.net/fr/search/stations/index/cmdrPosition/" + cmdr_position + "/economy/4/service/71/sortBy/distanceCMDR")
+
+	return trade_data
+
+}
+
+func get_interest_body(cmdr_position string) Planets {
+	var planets Planets
+
+	resp, err := http.Get("https://www.edsm.net/api-system-v1/bodies?systemName=" + cmdr_position)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data := string(body)
+
+	for i := 0; i < 10; i++ {
+		subType := gjson.Get(data, "bodies."+strconv.Itoa(i)+".subType")
+		terraformingState := gjson.Get(data, "bodies."+strconv.Itoa(i)+".terraformingState")
+		name := gjson.Get(data, "bodies."+strconv.Itoa(i)+".name")
+		if subType.String() == "High metal content world" && terraformingState.String() == "Candidate for terraforming" {
+			planets.terraform_hmetal_world = append(planets.terraform_hmetal_world, name.String())
+		} else if subType.String() == "Water world" && terraformingState.String() == "Candidate for terraforming" {
+			planets.terraform_water_world = append(planets.terraform_water_world, name.String())
+		} else if subType.String() == "Rocky body" && terraformingState.String() == "Candidate for terraforming" {
+			planets.terraform_rocky_body = append(planets.terraform_rocky_body, name.String())
+		} else if subType.String() == "Earth-like world" && terraformingState.String() == "Candidate for terraforming" {
+			planets.earth_like = append(planets.earth_like, name.String())
+		} else if subType.String() == "Water world" {
+			planets.water_world = append(planets.water_world, name.String())
+		} else if subType.String() == "Ammonia world" {
+			planets.amonia_world = append(planets.amonia_world, name.String())
+		}
+	}
+
+	return planets
 }
