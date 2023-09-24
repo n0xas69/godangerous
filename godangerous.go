@@ -57,7 +57,7 @@ func main() {
 
 		if cmdr_position == "" {
 			clear_cli()
-			fmt.Println("En attente de saut FSD...")
+			fmt.Println("Waiting FSD jump ...")
 
 		}
 
