@@ -66,35 +66,35 @@ func main() {
 
 			t1 := table.NewWriter()
 			t1.SetOutputMirror(os.Stdout)
-			t1.AppendHeader(table.Row{"Type de matériaux", "Système", "Station"})
+			t1.AppendHeader(table.Row{"Type of materials", "System", "Station"})
 			t1.AppendRows([]table.Row{
-				{"Brut", get_trade_raw((cmdr_position)).system, get_trade_raw(cmdr_position).station},
-				{"Fabriqué", get_trade_manu((cmdr_position)).system, get_trade_manu(cmdr_position).station},
-				{"Encodé", get_trade_data((cmdr_position)).system, get_trade_data(cmdr_position).station},
+				{"Raw", get_trade_raw((cmdr_position)).system, get_trade_raw(cmdr_position).station},
+				{"Manufactured", get_trade_manu((cmdr_position)).system, get_trade_manu(cmdr_position).station},
+				{"Encoded", get_trade_data((cmdr_position)).system, get_trade_data(cmdr_position).station},
 			})
 			t1.SetStyle(table.StyleColoredBright)
 
 			t2 := table.NewWriter()
 			t2.SetOutputMirror(os.Stdout)
-			t2.AppendHeader(table.Row{"Type de planète", "Nom"})
+			t2.AppendHeader(table.Row{"Planet type", "Name"})
 			t2.AppendRows([]table.Row{
-				{"Abondant en métaux terraformable", get_interest_body(cmdr_position).terraform_hmetal_world},
-				{"Tellurique", get_interest_body(cmdr_position).earth_like},
-				{"Planète rocheuse terraformable", get_interest_body(cmdr_position).terraform_rocky_body},
-				{"Monde aquatique terraformable", get_interest_body(cmdr_position).terraform_water_world},
-				{"Monde ammoniac", get_interest_body(cmdr_position).amonia_world},
-				{"Monde aquatique", get_interest_body(cmdr_position).water_world},
+				{"High metal content world terraformable", get_interest_body(cmdr_position).terraform_hmetal_world},
+				{"Earth-like world terraformable", get_interest_body(cmdr_position).earth_like},
+				{"Rocky Body terraformable", get_interest_body(cmdr_position).terraform_rocky_body},
+				{"Water world terraformable", get_interest_body(cmdr_position).terraform_water_world},
+				{"Ammonia world", get_interest_body(cmdr_position).amonia_world},
+				{"Water world", get_interest_body(cmdr_position).water_world},
 			})
 			t2.SetStyle(table.StyleColoredBright)
 
 			clear_cli()
-			fmt.Println("Vous êtes dans le système : " + cmdr_position)
+			fmt.Println("You are in the system : " + cmdr_position)
 			fmt.Println("")
-			fmt.Println(" ==== Trader les plus proches ====")
+			fmt.Println(" ==== Nearest Traders ====")
 			fmt.Println("")
 			t1.Render()
 			fmt.Println("")
-			fmt.Println(" ==== Planètes rares du système ====")
+			fmt.Println(" ==== Rare planets in the system ====")
 			fmt.Println("")
 			t2.Render()
 
@@ -149,7 +149,7 @@ func find_cmdr_position(folder_path string) string {
 
 	file, err := os.Open(folder_path + "\\" + newest_file.Name())
 	if err != nil {
-		fmt.Println("Impossible d'ouvrir le fichier journal du commandant")
+		fmt.Println("Unable to open commander log file")
 	}
 	defer file.Close()
 
@@ -257,10 +257,11 @@ func get_interest_body(cmdr_position string) Planets {
 
 	data := string(body)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		subType := gjson.Get(data, "bodies."+strconv.Itoa(i)+".subType")
 		terraformingState := gjson.Get(data, "bodies."+strconv.Itoa(i)+".terraformingState")
 		name := gjson.Get(data, "bodies."+strconv.Itoa(i)+".name")
+
 		if subType.String() == "High metal content world" && terraformingState.String() == "Candidate for terraforming" {
 			planets.terraform_hmetal_world = append(planets.terraform_hmetal_world, name.String())
 		} else if subType.String() == "Water world" && terraformingState.String() == "Candidate for terraforming" {
