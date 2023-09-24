@@ -52,8 +52,14 @@ func main() {
 	}
 
 	for {
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 		cmdr_position = find_cmdr_position(logs)
+
+		if cmdr_position == "" {
+			clear_cli()
+			fmt.Println("En attente de saut FSD...")
+
+		}
 
 		// we dont make http request if commander position dont change
 		if cmdr_position != pre_cmdr_position {
@@ -82,6 +88,8 @@ func main() {
 			t2.SetStyle(table.StyleColoredBright)
 
 			clear_cli()
+			fmt.Println("Vous êtes dans le système : " + cmdr_position)
+			fmt.Println("")
 			fmt.Println(" ==== Trader les plus proches ====")
 			fmt.Println("")
 			t1.Render()
@@ -139,9 +147,9 @@ func find_cmdr_position(folder_path string) string {
 
 	}
 
-	file, err := os.Open(newest_file.Name())
+	file, err := os.Open(folder_path + "\\" + newest_file.Name())
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Impossible d'ouvrir le fichier journal du commandant")
 	}
 	defer file.Close()
 
@@ -153,8 +161,12 @@ func find_cmdr_position(folder_path string) string {
 		}
 	}
 
-	cmdr_position := gjson.Get(fsd_jump, "StarSystem")
-	return cmdr_position.String()
+	if fsd_jump != "" {
+		cmdr_position := gjson.Get(fsd_jump, "StarSystem")
+		return cmdr_position.String()
+	} else {
+		return ""
+	}
 
 }
 
