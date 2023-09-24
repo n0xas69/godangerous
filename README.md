@@ -7,4 +7,6 @@ This program is a live dashboard for the commander. For the moment, it allows to
 
 Just download the binary file in realease page and run it !
 
+![](./screen.PNG)
+
 
