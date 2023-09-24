@@ -20,6 +20,7 @@ import (
 )
 
 var cmdr_position string
+var separator string
 
 type location struct {
 	station string
@@ -47,11 +48,11 @@ func main() {
 
 	if runtime.GOOS == "windows" {
 		logs = home + "\\Saved Games\\Frontier Developments\\Elite Dangerous"
+		separator = "\\"
 	} else {
 		logs = home + "/.local/share/Steam/steamapps/common/Elite Dangerous/Products/elite-dangerous-64/Logs/Saved Games"
+		separator = "/"
 	}
-
-	fmt.Println(logs)
 
 	for {
 		time.Sleep(1 * time.Second)
@@ -127,12 +128,9 @@ func find_cmdr_position(folder_path string) string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if runtime.GOOS == "windows" {
-			list_of_file = append(list_of_file, folder_path+"\\"+path)
-		} else {
 
-			list_of_file = append(list_of_file, folder_path+"/"+path)
-		}
+		list_of_file = append(list_of_file, folder_path+separator+path)
+
 		return nil
 	})
 
@@ -154,7 +152,8 @@ func find_cmdr_position(folder_path string) string {
 
 	}
 
-	file, err := os.Open(folder_path + "\\" + newest_file.Name())
+	file, err := os.Open(folder_path + separator + newest_file.Name())
+
 	if err != nil {
 		fmt.Println("Unable to open commander log file")
 	}
