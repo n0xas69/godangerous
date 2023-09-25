@@ -143,7 +143,7 @@ func find_cmdr_position(folder_path string) string {
 			log.Fatal(err)
 		}
 
-		if strings.Contains(f.Name(), "journal") {
+		if strings.Contains(f.Name(), "Journal") {
 			if f.Name() != "." && f.ModTime().After(newest_time) {
 				newest_file = f
 				newest_time = f.ModTime()
@@ -274,7 +274,7 @@ func get_interest_body(cmdr_position string) Planets {
 			planets.terraform_water_world = append(planets.terraform_water_world, name.String())
 		} else if subType.String() == "Rocky body" && terraformingState.String() == "Candidate for terraforming" {
 			planets.terraform_rocky_body = append(planets.terraform_rocky_body, name.String())
-		} else if subType.String() == "Earth-like world" && terraformingState.String() == "Candidate for terraforming" {
+		} else if subType.String() == "Earth-like world" {
 			planets.earth_like = append(planets.earth_like, name.String())
 		} else if subType.String() == "Water world" {
 			planets.water_world = append(planets.water_world, name.String())
